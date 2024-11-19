@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { useToast } from "@/components/ui/use-toast";
 
-// Initialize Stripe
+// Initialize Stripe with your publishable key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export const Hero = () => {
@@ -22,16 +22,26 @@ export const Hero = () => {
         return;
       }
 
+      // Show loading state to user
+      toast({
+        title: "Processing",
+        description: "Preparing your payment...",
+      });
+
       // Create a checkout session
-      const response = await fetch('/api/create-checkout-session', {
+      const response = await fetch('http://localhost:3000/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          priceId: 'price_basic_plan', // You'll need to replace this with your actual Stripe price ID
+          priceId: 'price_H5ggYwtDq4fbrJ', // Replace with your actual price ID from Stripe
         }),
       });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
 
       const session = await response.json();
 
@@ -53,6 +63,7 @@ export const Hero = () => {
         description: "Something went wrong. Please try again later.",
         variant: "destructive",
       });
+      console.error('Payment error:', error);
     }
   };
 
