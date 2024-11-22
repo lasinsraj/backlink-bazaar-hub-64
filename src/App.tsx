@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import Settings from "./pages/Settings";
 import Shop from "./pages/Shop";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/shop" element={<Shop />} />
+                  <Route path="/admin" element={<Admin />} />
                 </Routes>
               </main>
               <Footer />

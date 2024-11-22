@@ -5,22 +5,22 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  user: { email: string } | null;
+  user: { email: string; role?: string } | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [user, setUser] = useState<{ email: string; role?: string } | null>(null);
 
   const login = async (email: string, password: string) => {
     // TODO: Implement actual authentication logic
-    setUser({ email });
+    setUser({ email, role: email.includes('admin') ? 'admin' : 'user' });
   };
 
   const signup = async (email: string, password: string) => {
     // TODO: Implement actual signup logic
-    setUser({ email });
+    setUser({ email, role: 'user' });
   };
 
   const logout = () => {
