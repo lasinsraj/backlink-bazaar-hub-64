@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import { loadStripe } from "@stripe/stripe-js";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart } from "lucide-react";
@@ -12,29 +12,55 @@ const products = [
     id: 1,
     name: "Basic Backlink Package",
     price: 99,
-    description: "10 high-quality backlinks from reputable sites",
+    description: "Perfect for small businesses and startups looking to establish their online presence.",
+    details: [
+      "10 high-quality backlinks from reputable sites",
+      "Domain authority checking",
+      "Monthly report",
+      "24/7 support"
+    ],
+    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
     priceId: "price_basic",
+    reviews: [
+      { author: "John D.", rating: 5, text: "Great service, saw results within weeks!" },
+      { author: "Sarah M.", rating: 4, text: "Good value for money" }
+    ]
   },
   {
     id: 2,
     name: "Premium Backlink Package",
     price: 199,
-    description: "25 high-quality backlinks with detailed reporting",
+    description: "Comprehensive package for growing businesses seeking to boost their SEO performance.",
+    details: [
+      "25 high-quality backlinks with detailed reporting",
+      "Competitor analysis",
+      "Weekly progress updates",
+      "Priority support"
+    ],
+    image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
     priceId: "price_premium",
+    reviews: [
+      { author: "Mike R.", rating: 5, text: "Exceeded expectations!" },
+      { author: "Lisa K.", rating: 5, text: "Fantastic results" }
+    ]
   },
   {
     id: 3,
     name: "Enterprise Package",
     price: 499,
-    description: "50 premium backlinks with monthly support",
+    description: "Advanced SEO solution for established businesses aiming for market leadership.",
+    details: [
+      "50 premium backlinks with monthly support",
+      "Advanced SEO strategy",
+      "Custom reporting dashboard",
+      "Dedicated account manager"
+    ],
+    image: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7",
     priceId: "price_enterprise",
-  },
-  {
-    id: 4,
-    name: "Custom Package",
-    price: 999,
-    description: "Tailored backlink strategy with premium support",
-    priceId: "price_custom",
+    reviews: [
+      { author: "David W.", rating: 5, text: "Best investment in our SEO strategy" },
+      { author: "Emma T.", rating: 4, text: "Professional service" }
+    ]
   }
 ];
 
@@ -43,6 +69,15 @@ const Shop = () => {
   const { addToCart, items, total } = useCart();
 
   const handleCheckout = async () => {
+    if (items.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Please add items to your cart before checking out.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const stripe = await stripePromise;
       
@@ -57,7 +92,7 @@ const Shop = () => {
 
       toast({
         title: "Processing",
-        description: "Preparing your payment...",
+        description: "Preparing your checkout...",
       });
 
       const response = await fetch('http://localhost:3000/api/create-checkout-session', {
@@ -78,6 +113,7 @@ const Shop = () => {
       }
 
       const session = await response.json();
+      
       const result = await stripe.redirectToCheckout({
         sessionId: session.id,
       });
@@ -107,34 +143,68 @@ const Shop = () => {
           <ShoppingCart className="h-6 w-6" />
           <span className="font-bold">Total: ${total}</span>
           {items.length > 0 && (
-            <Button onClick={handleCheckout}>
+            <Button onClick={handleCheckout} variant="default">
               Checkout
             </Button>
           )}
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {products.map((product) => (
-          <Card key={product.id} className="p-6">
-            <h2 className="text-2xl font-bold mb-2">{product.name}</h2>
-            <p className="text-3xl font-bold text-primary mb-4">${product.price}</p>
-            <p className="text-gray-600 mb-6">{product.description}</p>
-            <Button 
-              className="w-full"
-              onClick={() => {
-                addToCart({
-                  id: product.id,
-                  name: product.name,
-                  price: product.price,
-                });
-                toast({
-                  title: "Added to cart",
-                  description: `${product.name} has been added to your cart.`,
-                });
-              }}
-            >
-              Add to Cart
-            </Button>
+          <Card key={product.id} className="flex flex-col h-full">
+            <CardHeader>
+              <img 
+                src={product.image} 
+                alt={product.name} 
+                className="w-full h-48 object-cover rounded-t-lg mb-4"
+              />
+              <CardTitle>{product.name}</CardTitle>
+              <CardDescription className="text-3xl font-bold text-primary">
+                ${product.price}
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="flex-grow">
+              <p className="text-gray-600 mb-4">{product.description}</p>
+              <ul className="list-disc list-inside space-y-2 mb-4">
+                {product.details.map((detail, index) => (
+                  <li key={index} className="text-gray-600">{detail}</li>
+                ))}
+              </ul>
+              
+              <div className="mt-4">
+                <h4 className="font-semibold mb-2">Reviews</h4>
+                {product.reviews.map((review, index) => (
+                  <div key={index} className="mb-2 p-2 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{review.author}</span>
+                      <span className="text-yellow-500">{"★".repeat(review.rating)}</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">{review.text}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+            
+            <CardFooter>
+              <Button 
+                className="w-full"
+                onClick={() => {
+                  addToCart({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                  });
+                  toast({
+                    title: "Added to cart",
+                    description: `${product.name} has been added to your cart.`,
+                  });
+                }}
+              >
+                Add to Cart
+              </Button>
+            </CardFooter>
           </Card>
         ))}
       </div>
