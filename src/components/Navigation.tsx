@@ -34,6 +34,9 @@ export const Navigation = () => {
             <Link to="/" className="text-gray-600 hover:text-primary transition-colors">
               Home
             </Link>
+            <Link to="/shop" className="text-gray-600 hover:text-primary transition-colors">
+              Shop
+            </Link>
             <Link to="/about" className="text-gray-600 hover:text-primary transition-colors">
               About
             </Link>
@@ -57,13 +60,13 @@ export const Navigation = () => {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
-                    <Link to="/profile">Profile</Link>
+                    <Link to="/profile" className="w-full">Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Link to="/orders">Orders</Link>
+                    <Link to="/orders" className="w-full">Orders</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Link to="/settings">Settings</Link>
+                    <Link to="/settings" className="w-full">Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>

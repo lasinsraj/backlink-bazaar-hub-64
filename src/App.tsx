@@ -11,6 +11,10 @@ import Contact from "./pages/Contact";
 import RefundPolicy from "./pages/RefundPolicy";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Profile from "./pages/Profile";
+import Orders from "./pages/Orders";
+import Settings from "./pages/Settings";
+import Shop from "./pages/Shop";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +33,10 @@ const App = () => (
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/shop" element={<Shop />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
