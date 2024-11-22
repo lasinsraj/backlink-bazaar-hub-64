@@ -28,6 +28,7 @@ const Orders = () => {
       return data;
     },
     enabled: !!user,
+    retry: false
   });
 
   if (!user) {
