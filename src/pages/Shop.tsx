@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { loadStripe } from "@stripe/stripe-js";
+import { useCart } from "@/contexts/CartContext";
+import { ShoppingCart } from "lucide-react";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -27,12 +29,20 @@ const products = [
     description: "50 premium backlinks with monthly support",
     priceId: "price_enterprise",
   },
+  {
+    id: 4,
+    name: "Custom Package",
+    price: 999,
+    description: "Tailored backlink strategy with premium support",
+    priceId: "price_custom",
+  }
 ];
 
 const Shop = () => {
   const { toast } = useToast();
+  const { addToCart, items, total } = useCart();
 
-  const handlePurchase = async (priceId: string) => {
+  const handleCheckout = async () => {
     try {
       const stripe = await stripePromise;
       
@@ -55,7 +65,12 @@ const Shop = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ 
+          items: items.map(item => ({
+            priceId: products.find(p => p.id === item.id)?.priceId,
+            quantity: item.quantity
+          }))
+        }),
       });
 
       if (!response.ok) {
@@ -86,8 +101,19 @@ const Shop = () => {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <h1 className="text-4xl font-bold text-center mb-12">Our Packages</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold">Our Packages</h1>
+        <div className="flex items-center gap-4">
+          <ShoppingCart className="h-6 w-6" />
+          <span className="font-bold">Total: ${total}</span>
+          {items.length > 0 && (
+            <Button onClick={handleCheckout}>
+              Checkout
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {products.map((product) => (
           <Card key={product.id} className="p-6">
             <h2 className="text-2xl font-bold mb-2">{product.name}</h2>
@@ -95,9 +121,19 @@ const Shop = () => {
             <p className="text-gray-600 mb-6">{product.description}</p>
             <Button 
               className="w-full"
-              onClick={() => handlePurchase(product.priceId)}
+              onClick={() => {
+                addToCart({
+                  id: product.id,
+                  name: product.name,
+                  price: product.price,
+                });
+                toast({
+                  title: "Added to cart",
+                  description: `${product.name} has been added to your cart.`,
+                });
+              }}
             >
-              Purchase Now
+              Add to Cart
             </Button>
           </Card>
         ))}
