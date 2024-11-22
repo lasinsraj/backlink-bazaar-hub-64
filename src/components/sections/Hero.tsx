@@ -53,33 +53,37 @@ export const Hero = () => {
   };
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-b from-white to-gray-50 py-24">
+    <div className="relative overflow-hidden bg-gradient-to-b from-white to-gray-50 py-12 md:py-24">
       <div className="container mx-auto px-4">
         <div className="text-center animate-fade-in">
-          <h1 className="mb-6 text-5xl font-bold tracking-tight text-gray-900 sm:text-6xl animate-scale-in">
+          <h1 className="mb-4 md:mb-6 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 animate-scale-in">
             Boost Your Rankings with
-            <span className="text-primary animate-pulse"> Premium Backlinks</span>
+            <span className="text-primary block md:inline animate-pulse"> Premium Backlinks</span>
           </h1>
-          <p className="mx-auto mb-8 max-w-2xl text-xl text-gray-600 animate-fade-in">
+          <p className="mx-auto mb-6 md:mb-8 max-w-2xl text-lg md:text-xl text-gray-600 animate-fade-in px-4">
             Get high-quality, keyword-targeted backlinks from authoritative websites.
             Improve your SEO and drive more organic traffic to your website.
           </p>
-          <div className="flex justify-center gap-4 animate-slide-in-right">
+          <div className="flex flex-col md:flex-row justify-center gap-4 animate-slide-in-right px-4">
             <Button 
               size="lg" 
-              className="bg-primary hover:bg-primary/90 hover-scale"
+              className="bg-primary hover:bg-primary/90 hover-scale w-full md:w-auto"
               onClick={handlePayment}
             >
               Get Started <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button size="lg" variant="outline" className="hover-scale">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="hover-scale w-full md:w-auto"
+            >
               Learn More
             </Button>
           </div>
         </div>
       </div>
       <div className="absolute -top-52 left-1/2 -z-10 -translate-x-1/2">
-        <div className="h-[600px] w-[600px] rounded-full bg-primary/5 blur-3xl animate-float"></div>
+        <div className="h-[300px] md:h-[600px] w-[300px] md:w-[600px] rounded-full bg-primary/5 blur-3xl animate-float"></div>
       </div>
     </div>
   );
