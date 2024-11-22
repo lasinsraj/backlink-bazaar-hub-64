@@ -43,6 +43,11 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
     event.preventDefault();
     
     if (!stripe || !elements) {
+      toast({
+        title: "Error",
+        description: "Stripe has not been initialized",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -60,7 +65,25 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
     setIsProcessing(true);
 
     try {
-      // Create order with "pending" status first
+      // First create a payment intent on your server
+      const response = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: total * 100, // Convert to cents
+          currency: 'usd',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment intent');
+      }
+
+      const { clientSecret } = await response.json();
+
+      // Create order with "pending" status
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -75,34 +98,50 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
 
       if (orderError) throw orderError;
 
-      // Simulate payment processing for development
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      // Confirm the payment with Stripe
       const cardElement = elements.getElement(CardElement);
       if (!cardElement) throw new Error('Card element not found');
 
-      // In development, we'll simulate a successful payment
-      // In production, you would process the actual payment here
-      
-      // Update order status to completed after successful payment
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ status: 'completed' })
-        .eq('id', order.id);
-
-      if (updateError) throw updateError;
-      
-      toast({
-        title: "Order Completed!",
-        description: "Thank you for your purchase. Your order has been processed successfully.",
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            email: user.email,
+          },
+        },
       });
-      
-      onSuccess();
-      navigate("/orders");
+
+      if (stripeError) {
+        // Update order status to failed
+        await supabase
+          .from('orders')
+          .update({ status: 'failed' })
+          .eq('id', order.id);
+
+        throw new Error(stripeError.message);
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        // Update order status to completed
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({ status: 'completed' })
+          .eq('id', order.id);
+
+        if (updateError) throw updateError;
+
+        toast({
+          title: "Payment Successful!",
+          description: "Your order has been processed successfully.",
+        });
+
+        onSuccess();
+        navigate("/orders");
+      }
     } catch (error) {
       toast({
         title: "Payment Failed",
-        description: "There was an error processing your payment. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error processing your payment",
         variant: "destructive",
       });
       console.error('Payment error:', error);
