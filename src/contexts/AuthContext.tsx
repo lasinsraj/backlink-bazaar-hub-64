@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         setUser({
           email: session.user.email || '',
-          role: session.user.email?.includes('admin') ? 'admin' : 'user'
+          role: session.user.user_metadata?.role || (session.user.email?.includes('admin') ? 'admin' : 'user')
         });
       }
     });
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         setUser({
           email: session.user.email || '',
-          role: session.user.email?.includes('admin') ? 'admin' : 'user'
+          role: session.user.user_metadata?.role || (session.user.email?.includes('admin') ? 'admin' : 'user')
         });
       } else {
         setUser(null);
