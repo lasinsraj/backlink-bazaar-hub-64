@@ -4,8 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
+import { PaymentSummary } from "./PaymentSummary";
+import { createOrder, updateOrderStatus } from "@/services/paymentService";
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
@@ -65,22 +66,14 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
     setIsProcessing(true);
 
     try {
-      // Create order with "pending" status first
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_email: user.email,
-          total_amount: total,
-          status: 'pending',
-          items: items,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // Create order first
+      const order = await createOrder({
+        userEmail: user.email,
+        total,
+        items,
+      });
 
-      if (orderError) throw orderError;
-
-      // Create a payment method
+      // Create payment method
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
         card: elements.getElement(CardElement)!,
@@ -89,12 +82,10 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
         },
       });
 
-      if (pmError) {
-        throw pmError;
-      }
+      if (pmError) throw pmError;
 
-      // Create a payment intent using your backend endpoint
-      const response = await fetch('https://your-backend-url/create-payment-intent', {
+      // Call your backend to create a payment intent
+      const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,43 +98,30 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
       });
 
       if (!response.ok) {
-        throw new Error('Payment failed');
+        throw new Error('Failed to create payment intent');
       }
 
-      const { client_secret } = await response.json();
+      const { clientSecret } = await response.json();
 
-      // Confirm the payment
+      // Confirm the payment with the client secret
       const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-        client_secret,
+        clientSecret,
         {
           payment_method: paymentMethod.id,
         }
       );
 
       if (confirmError) {
-        // Update order status to failed
-        await supabase
-          .from('orders')
-          .update({ status: 'failed' })
-          .eq('id', order.id);
-
+        await updateOrderStatus(order.id, 'failed');
         throw confirmError;
       }
 
       if (paymentIntent.status === 'succeeded') {
-        // Update order status to completed
-        const { error: updateError } = await supabase
-          .from('orders')
-          .update({ status: 'completed' })
-          .eq('id', order.id);
-
-        if (updateError) throw updateError;
-
+        await updateOrderStatus(order.id, 'completed');
         toast({
           title: "Payment Successful!",
           description: "Your order has been processed successfully.",
         });
-
         onSuccess();
         navigate("/orders");
       }
@@ -165,40 +143,25 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
         <CardElement options={CARD_ELEMENT_OPTIONS} />
       </div>
       
-      <div className="space-y-4">
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="flex justify-between items-center text-sm">
-            <span>Subtotal:</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm mt-2">
-            <span>Processing Fee:</span>
-            <span>$0.00</span>
-          </div>
-          <div className="flex justify-between items-center font-bold text-lg mt-2 pt-2 border-t">
-            <span>Total:</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
-        </div>
+      <PaymentSummary total={total} />
 
-        <Button 
-          type="submit" 
-          className="w-full bg-primary hover:bg-primary/90"
-          disabled={!stripe || isProcessing}
-        >
-          {isProcessing ? (
-            <span className="flex items-center gap-2">
-              Processing...
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            </span>
-          ) : (
-            `Pay $${total.toFixed(2)}`
-          )}
-        </Button>
-      </div>
+      <Button 
+        type="submit" 
+        className="w-full bg-primary hover:bg-primary/90"
+        disabled={!stripe || isProcessing}
+      >
+        {isProcessing ? (
+          <span className="flex items-center gap-2">
+            Processing...
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </span>
+        ) : (
+          `Pay $${total.toFixed(2)}`
+        )}
+      </Button>
     </form>
   );
 };
