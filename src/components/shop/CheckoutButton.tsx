@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { loadStripe } from "@stripe/stripe-js";
+import { supabase } from "@/lib/supabase";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -36,13 +37,22 @@ export const CheckoutButton = () => {
         description: "Preparing your checkout...",
       });
 
-      // Mock successful checkout session for development
-      const mockSession = {
-        id: 'mock_session_' + Date.now(),
-      };
+      // Create a checkout session through Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { items },
+      });
+
+      if (error || !data?.sessionId) {
+        toast({
+          title: "Error",
+          description: "Failed to create checkout session. Please try again later.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const result = await stripe.redirectToCheckout({
-        sessionId: mockSession.id,
+        sessionId: data.sessionId,
       });
 
       if (result.error) {
