@@ -22,14 +22,14 @@ import Admin from "./pages/Admin";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CartProvider>
-        <TooltipProvider>
-          <div className="min-h-screen flex flex-col">
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <div className="min-h-screen flex flex-col">
+              <Toaster />
+              <Sonner />
               <Navigation />
               <main className="flex-grow">
                 <Routes>
@@ -47,12 +47,12 @@ const App = () => (
                 </Routes>
               </main>
               <Footer />
-            </BrowserRouter>
-          </div>
-        </TooltipProvider>
-      </CartProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+            </div>
+          </TooltipProvider>
+        </CartProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </BrowserRouter>
 );
 
 export default App;
