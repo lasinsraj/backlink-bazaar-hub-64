@@ -6,12 +6,14 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -32,25 +34,37 @@ const CARD_ELEMENT_OPTIONS = {
   hidePostalCode: true,
 };
 
-const CheckoutForm = ({ total, onSuccess }: { total: number; onSuccess: () => void }) => {
+const CheckoutForm = ({ total, onSuccess, onClose }: { total: number; onSuccess: () => void; onClose: () => void }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuth();
   const { items } = useCart();
+  const navigate = useNavigate();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
-    if (!stripe || !elements || !user) {
+    if (!stripe || !elements) {
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to complete your purchase",
+        variant: "destructive",
+      });
+      onClose();
+      navigate("/login");
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      // Simulate successful payment for development
+      // Simulate payment processing for development
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Save order to Supabase
@@ -60,7 +74,7 @@ const CheckoutForm = ({ total, onSuccess }: { total: number; onSuccess: () => vo
           user_email: user.email,
           total_amount: total,
           status: 'completed',
-          items: items, // This comes from CartContext
+          items: items,
           created_at: new Date().toISOString(),
         });
 
@@ -72,6 +86,7 @@ const CheckoutForm = ({ total, onSuccess }: { total: number; onSuccess: () => vo
       });
       
       onSuccess();
+      navigate("/orders");
     } catch (error) {
       toast({
         title: "Payment Failed",
@@ -132,8 +147,19 @@ export const CheckoutButton = () => {
   const { items, total, clearCart } = useCart();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const handleCheckout = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to proceed with checkout",
+      });
+      navigate("/login");
+      return;
+    }
+
     if (items.length === 0) {
       toast({
         title: "Cart is empty",
@@ -163,9 +189,16 @@ export const CheckoutButton = () => {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Complete your purchase</DialogTitle>
+            <DialogDescription>
+              Enter your payment details to complete the order
+            </DialogDescription>
           </DialogHeader>
           <Elements stripe={stripePromise}>
-            <CheckoutForm total={total} onSuccess={handleSuccess} />
+            <CheckoutForm 
+              total={total} 
+              onSuccess={handleSuccess} 
+              onClose={() => setIsOpen(false)} 
+            />
           </Elements>
         </DialogContent>
       </Dialog>
