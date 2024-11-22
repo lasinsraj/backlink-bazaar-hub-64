@@ -49,6 +49,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -92,6 +97,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signup = async (email: string, password: string) => {
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signUp({
         email,
