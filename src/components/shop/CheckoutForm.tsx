@@ -80,49 +80,54 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
 
       if (orderError) throw orderError;
 
-      // Get the payment intent from Stripe
-      const { error: stripeError, paymentIntent } = await stripe.createPaymentMethod({
+      // Create a payment method
+      const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
         card: elements.getElement(CardElement)!,
         billing_details: {
           email: user.email,
         },
-      }).then(async (result) => {
-        if (result.error) {
-          throw result.error;
-        }
-
-        // Create a PaymentIntent
-        const response = await fetch('https://api.stripe.com/v1/payment_intents', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_STRIPE_PUBLIC_KEY}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            amount: (total * 100).toString(),
-            currency: 'usd',
-            payment_method: result.paymentMethod.id,
-            confirm: 'true',
-            return_url: window.location.origin + '/orders',
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Payment failed');
-        }
-
-        return await response.json();
       });
 
-      if (stripeError) {
+      if (pmError) {
+        throw pmError;
+      }
+
+      // Create a payment intent using your backend endpoint
+      const response = await fetch('https://your-backend-url/create-payment-intent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: total * 100, // convert to cents
+          payment_method_id: paymentMethod.id,
+          order_id: order.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Payment failed');
+      }
+
+      const { client_secret } = await response.json();
+
+      // Confirm the payment
+      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+        client_secret,
+        {
+          payment_method: paymentMethod.id,
+        }
+      );
+
+      if (confirmError) {
         // Update order status to failed
         await supabase
           .from('orders')
           .update({ status: 'failed' })
           .eq('id', order.id);
 
-        throw stripeError;
+        throw confirmError;
       }
 
       if (paymentIntent.status === 'succeeded') {
