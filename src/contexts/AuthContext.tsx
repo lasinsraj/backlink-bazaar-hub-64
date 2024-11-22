@@ -57,22 +57,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         if (error.message.includes('Email not confirmed')) {
+          // Automatically resend confirmation email
           const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
             email,
           });
 
           if (resendError) {
-            toast.error('Failed to resend confirmation email: ' + resendError.message);
+            toast.error('Failed to resend confirmation email. Please try signing up again.');
           } else {
             toast.info(
-              'Please check your email for a new confirmation link. You must verify your email before logging in.',
+              'A new confirmation email has been sent. Please check your inbox and verify your email before logging in.',
               { duration: 6000 }
             );
           }
-        } else {
-          toast.error('Login failed: ' + error.message);
+          return;
         }
+        toast.error('Login failed: ' + error.message);
         throw error;
       }
 
