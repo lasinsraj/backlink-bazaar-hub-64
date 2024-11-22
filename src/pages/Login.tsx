@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,11 +17,11 @@ const Login = () => {
     e.preventDefault();
     try {
       await login(email, password);
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
-      navigate("/");
+      if (email.includes('admin')) {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -37,6 +38,11 @@ const Login = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Sign in to your account
           </h2>
+          <Alert className="mt-4">
+            <AlertDescription>
+              For admin access, use an email containing "admin" (e.g., admin@example.com)
+            </AlertDescription>
+          </Alert>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">

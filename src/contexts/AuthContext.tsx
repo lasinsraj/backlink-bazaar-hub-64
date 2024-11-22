@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { toast } from '@/components/ui/use-toast';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -14,12 +15,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<{ email: string; role?: string } | null>(null);
 
   const login = async (email: string, password: string) => {
-    // TODO: Implement actual authentication logic
-    setUser({ email, role: email.includes('admin') ? 'admin' : 'user' });
+    // Demo authentication logic
+    if (email.includes('admin')) {
+      setUser({ email, role: 'admin' });
+      toast({
+        title: "Admin Access Granted",
+        description: "You can now access the admin panel at /admin",
+      });
+    } else {
+      setUser({ email, role: 'user' });
+    }
   };
 
   const signup = async (email: string, password: string) => {
-    // TODO: Implement actual signup logic
     setUser({ email, role: 'user' });
   };
 
