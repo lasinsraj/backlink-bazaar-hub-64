@@ -3,7 +3,6 @@ import { ArrowRight } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { useToast } from "@/components/ui/use-toast";
 
-// Initialize Stripe with your publishable key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export const Hero = () => {
@@ -22,30 +21,40 @@ export const Hero = () => {
         return;
       }
 
-      // Show loading state to user
       toast({
         title: "Processing",
         description: "Preparing your payment...",
       });
 
-      // Create a checkout session
-      const response = await fetch('http://localhost:3000/api/create-checkout-session', {
+      // Create a Stripe Checkout Session directly
+      const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_STRIPE_PUBLIC_KEY}`,
         },
         body: JSON.stringify({
-          priceId: 'price_H5ggYwtDq4fbrJ', // Replace with your actual price ID from Stripe
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: 'Basic Backlink Package',
+                },
+                unit_amount: 49900, // $499.00
+              },
+              quantity: 1,
+            },
+          ],
+          mode: 'payment',
+          success_url: `${window.location.origin}/success`,
+          cancel_url: `${window.location.origin}/cancel`,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
       const session = await response.json();
 
-      // Redirect to Stripe checkout
       const result = await stripe.redirectToCheckout({
         sessionId: session.id,
       });
