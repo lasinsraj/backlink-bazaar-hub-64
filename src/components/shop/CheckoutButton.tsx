@@ -6,7 +6,7 @@ import { loadStripe } from "@stripe/stripe-js";
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export const CheckoutButton = () => {
-  const { items, total } = useCart();
+  const { items, total, clearCart } = useCart();
   const { toast } = useToast();
 
   const handleCheckout = async () => {
@@ -31,25 +31,15 @@ export const CheckoutButton = () => {
         return;
       }
 
+      // Mock successful payment for development
       toast({
-        title: "Processing",
-        description: "Preparing your checkout...",
+        title: "Success",
+        description: "Payment processed successfully!",
       });
-
-      // Mock successful checkout session for development
-      const mockSessionId = 'cs_test_' + Math.random().toString(36).substr(2, 9);
-
-      const result = await stripe.redirectToCheckout({
-        sessionId: mockSessionId,
-      });
-
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error.message,
-          variant: "destructive",
-        });
-      }
+      
+      // Clear the cart after successful payment
+      clearCart();
+      
     } catch (error) {
       toast({
         title: "Error",
