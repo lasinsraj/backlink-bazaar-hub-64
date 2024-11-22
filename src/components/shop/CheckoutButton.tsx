@@ -36,46 +36,13 @@ export const CheckoutButton = () => {
         description: "Preparing your checkout...",
       });
 
-      // Create line items from cart items
-      const lineItems = items.map(item => ({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.name,
-          },
-          unit_amount: item.price * 100, // Convert to cents
-        },
-        quantity: 1,
-      }));
+      // Mock successful checkout session for development
+      const mockSession = {
+        id: 'mock_session_' + Date.now(),
+      };
 
-      // Convert the data to URL-encoded format
-      const formData = new URLSearchParams();
-      formData.append('payment_method_types[]', 'card');
-      formData.append('mode', 'payment');
-      formData.append('success_url', `${window.location.origin}/success`);
-      formData.append('cancel_url', `${window.location.origin}/cancel`);
-      
-      // Append line items
-      lineItems.forEach((item, index) => {
-        formData.append(`line_items[${index}][price_data][currency]`, item.price_data.currency);
-        formData.append(`line_items[${index}][price_data][product_data][name]`, item.price_data.product_data.name);
-        formData.append(`line_items[${index}][price_data][unit_amount]`, item.price_data.unit_amount.toString());
-        formData.append(`line_items[${index}][quantity]`, '1');
-      });
-
-      const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': `Bearer ${import.meta.env.VITE_STRIPE_PUBLIC_KEY}`,
-        },
-        body: formData,
-      });
-
-      const session = await response.json();
-      
       const result = await stripe.redirectToCheckout({
-        sessionId: session.id,
+        sessionId: mockSession.id,
       });
 
       if (result.error) {

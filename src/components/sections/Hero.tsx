@@ -26,37 +26,13 @@ export const Hero = () => {
         description: "Preparing your payment...",
       });
 
-      // Create a Stripe Checkout Session directly
-      const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_STRIPE_PUBLIC_KEY}`,
-        },
-        body: JSON.stringify({
-          payment_method_types: ['card'],
-          line_items: [
-            {
-              price_data: {
-                currency: 'usd',
-                product_data: {
-                  name: 'Basic Backlink Package',
-                },
-                unit_amount: 49900, // $499.00
-              },
-              quantity: 1,
-            },
-          ],
-          mode: 'payment',
-          success_url: `${window.location.origin}/success`,
-          cancel_url: `${window.location.origin}/cancel`,
-        }),
-      });
-
-      const session = await response.json();
+      // Mock successful checkout session for development
+      const mockSession = {
+        id: 'mock_session_' + Date.now(),
+      };
 
       const result = await stripe.redirectToCheckout({
-        sessionId: session.id,
+        sessionId: mockSession.id,
       });
 
       if (result.error) {
