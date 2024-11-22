@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Orders = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { data: orders, isLoading } = useQuery({
+  const { data: orders, isLoading, error } = useQuery({
     queryKey: ['orders', user?.email],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -18,7 +19,12 @@ const Orders = () => {
         .eq('user_email', user?.email)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          throw new Error('The orders system is currently being set up. Please try again later.');
+        }
+        throw error;
+      }
       return data;
     },
     enabled: !!user,
@@ -33,6 +39,18 @@ const Orders = () => {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <AlertDescription>
+            {error instanceof Error ? error.message : 'An error occurred while fetching your orders.'}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
