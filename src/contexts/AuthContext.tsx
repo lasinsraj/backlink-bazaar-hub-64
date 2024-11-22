@@ -49,23 +49,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      toast.error('Login failed: ' + error.message);
+      if (error) {
+        if (error.message.includes('Email not confirmed')) {
+          toast.error(
+            'Please verify your email address. Check your inbox for a confirmation link.',
+            { duration: 5000 }
+          );
+        } else {
+          toast.error('Login failed: ' + error.message);
+        }
+        throw error;
+      }
+
+      toast.success('Successfully logged in!');
+    } catch (error) {
       throw error;
     }
-
-    toast.success('Successfully logged in!');
   };
 
   const signup = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+      }
     });
 
     if (error) {
@@ -73,7 +87,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     }
 
-    toast.success('Check your email to confirm your account!');
+    toast.success(
+      'Please check your email to confirm your account before logging in!',
+      { duration: 6000 }
+    );
   };
 
   const logout = async () => {
