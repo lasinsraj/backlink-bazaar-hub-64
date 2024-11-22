@@ -56,8 +56,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password. Please try again.');
+          return;
+        }
+        
         if (error.message.includes('Email not confirmed')) {
-          // Automatically resend confirmation email
           const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
             email,
@@ -73,45 +77,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           return;
         }
+
         toast.error('Login failed: ' + error.message);
-        throw error;
+        return;
       }
 
       if (data.user) {
         toast.success('Successfully logged in!');
       }
     } catch (error) {
-      throw error;
+      toast.error('An unexpected error occurred. Please try again.');
+      console.error('Login error:', error);
     }
   };
 
   const signup = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/login`,
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast.error('This email is already registered. Please try logging in instead.');
+          return;
+        }
+        toast.error('Signup failed: ' + error.message);
+        return;
       }
-    });
 
-    if (error) {
-      toast.error('Signup failed: ' + error.message);
-      throw error;
+      toast.success(
+        'Please check your email to confirm your account before logging in!',
+        { duration: 6000 }
+      );
+    } catch (error) {
+      toast.error('An unexpected error occurred during signup. Please try again.');
+      console.error('Signup error:', error);
     }
-
-    toast.success(
-      'Please check your email to confirm your account before logging in!',
-      { duration: 6000 }
-    );
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast.error('Logout failed: ' + error.message);
-      throw error;
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast.error('Logout failed: ' + error.message);
+        return;
+      }
+      setUser(null);
+      toast.success('Successfully logged out!');
+    } catch (error) {
+      toast.error('An unexpected error occurred during logout.');
+      console.error('Logout error:', error);
     }
-    setUser(null);
   };
 
   return (
