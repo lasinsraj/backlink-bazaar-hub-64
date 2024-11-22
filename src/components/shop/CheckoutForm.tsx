@@ -65,25 +65,7 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
     setIsProcessing(true);
 
     try {
-      // First create a payment intent on your server
-      const response = await fetch('/api/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: total * 100, // Convert to cents
-          currency: 'usd',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create payment intent');
-      }
-
-      const { clientSecret } = await response.json();
-
-      // Create order with "pending" status
+      // Create order with "pending" status first
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -98,17 +80,39 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
 
       if (orderError) throw orderError;
 
-      // Confirm the payment with Stripe
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) throw new Error('Card element not found');
-
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            email: user.email,
-          },
+      // Get the payment intent from Stripe
+      const { error: stripeError, paymentIntent } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: elements.getElement(CardElement)!,
+        billing_details: {
+          email: user.email,
         },
+      }).then(async (result) => {
+        if (result.error) {
+          throw result.error;
+        }
+
+        // Create a PaymentIntent
+        const response = await fetch('https://api.stripe.com/v1/payment_intents', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_STRIPE_PUBLIC_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            amount: (total * 100).toString(),
+            currency: 'usd',
+            payment_method: result.paymentMethod.id,
+            confirm: 'true',
+            return_url: window.location.origin + '/orders',
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Payment failed');
+        }
+
+        return await response.json();
       });
 
       if (stripeError) {
@@ -118,7 +122,7 @@ export const CheckoutForm = ({ total, onSuccess, onClose }: CheckoutFormProps) =
           .update({ status: 'failed' })
           .eq('id', order.id);
 
-        throw new Error(stripeError.message);
+        throw stripeError;
       }
 
       if (paymentIntent.status === 'succeeded') {
