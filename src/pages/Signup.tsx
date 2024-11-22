@@ -3,30 +3,25 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       await signup(email, password);
-      toast({
-        title: "Account created",
-        description: "Your account has been successfully created.",
-      });
       navigate("/");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create account.",
-        variant: "destructive",
-      });
+      // Error is handled in AuthContext
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,6 +42,7 @@ const Signup = () => {
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -56,13 +52,21 @@ const Signup = () => {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
               />
             </div>
           </div>
 
           <div>
-            <Button type="submit" className="w-full">
-              Sign up
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                'Sign up'
+              )}
             </Button>
           </div>
         </form>
