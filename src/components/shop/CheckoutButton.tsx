@@ -36,18 +36,32 @@ export const CheckoutButton = () => {
         description: "Preparing your checkout...",
       });
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/create-checkout-session`, {
+      // Create line items from cart items
+      const lineItems = items.map(item => ({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: item.name,
+          },
+          unit_amount: item.price * 100, // Convert to cents
+        },
+        quantity: 1,
+      }));
+
+      const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_STRIPE_PUBLIC_KEY}`,
         },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({
+          payment_method_types: ['card'],
+          line_items: lineItems,
+          mode: 'payment',
+          success_url: `${window.location.origin}/success`,
+          cancel_url: `${window.location.origin}/cancel`,
+        }),
       });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
 
       const session = await response.json();
       
