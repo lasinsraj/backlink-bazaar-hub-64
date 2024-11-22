@@ -3,7 +3,9 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { CheckoutButton } from "@/components/shop/CheckoutButton";
 import { products } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -14,6 +16,15 @@ import {
 
 const Shop = () => {
   const { items, total, removeFromCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleCheckoutClick = () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -58,7 +69,16 @@ const Shop = () => {
                       <span>Total:</span>
                       <span>${total.toFixed(2)}</span>
                     </div>
-                    <CheckoutButton />
+                    {isAuthenticated ? (
+                      <CheckoutButton />
+                    ) : (
+                      <Button 
+                        className="w-full mt-4"
+                        onClick={() => navigate("/login")}
+                      >
+                        Login to Checkout
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}

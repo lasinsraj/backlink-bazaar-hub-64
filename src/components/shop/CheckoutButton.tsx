@@ -10,6 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
@@ -35,11 +37,13 @@ const CheckoutForm = ({ total, onSuccess }: { total: number; onSuccess: () => vo
   const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const { user } = useAuth();
+  const { items } = useCart();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !user) {
       return;
     }
 
@@ -48,6 +52,19 @@ const CheckoutForm = ({ total, onSuccess }: { total: number; onSuccess: () => vo
     try {
       // Simulate successful payment for development
       await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Save order to Supabase
+      const { error } = await supabase
+        .from('orders')
+        .insert({
+          user_email: user.email,
+          total_amount: total,
+          status: 'completed',
+          items: items, // This comes from CartContext
+          created_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
       
       toast({
         title: "Order Completed!",
@@ -61,6 +78,7 @@ const CheckoutForm = ({ total, onSuccess }: { total: number; onSuccess: () => vo
         description: "There was an error processing your payment. Please try again.",
         variant: "destructive",
       });
+      console.error('Payment error:', error);
     } finally {
       setIsProcessing(false);
     }
